@@ -6,7 +6,7 @@ import requests
 
 
 Burl = "http://books.toscrape.com/catalogue/the-girl-in-the-ice-dci-erika-foster-1_65/index.html"
-Purl = 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html'
+Purl = 'http://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
 
 
 
@@ -14,7 +14,6 @@ def FindBookUrl(page_url):
     links = []
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
-
     artc = soup.find_all('h3')
 
     for h3 in artc:
@@ -23,11 +22,21 @@ def FindBookUrl(page_url):
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
             links.append(lin)
     en_tete = ['liens']
-    with open('link_data.csv', 'w', encoding='utf-8') as csv_files:
+    with open('link_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow(en_tete)
         for link in links:
             writer.writerow([link])
+    url_parts = page_url.rsplit('/', 1)
+    next = soup.find('li', class_='next')
+    if next:
+        a_tag = next.find('a')
+        href = a_tag['href']
+        new_link = url_parts[0] + '/' + href
+        # FindBookData()
+        FindBookUrl(new_link)
+    else:
+        print("Tag li avec classe 'next' non trouvé.")
 
 
 
@@ -42,8 +51,8 @@ def FindBookUrl(page_url):
 def LinkCatToBook():
     with open('link_data.csv') as fichier_csv:
         reader = csv.reader(fichier_csv, delimiter=',')
-        for ligne in reader:
-            print(ligne)
+        # for ligne in reader:
+        #     print(ligne)
 
 
 
@@ -64,6 +73,7 @@ def FindBookData(page_url):
 
     for infos in infotb:
         info.append(infos.string)
+        
 
     upc = info[0]
     title = soup.find('h1').string
@@ -72,7 +82,9 @@ def FindBookData(page_url):
     number_available = info[5]
     product_description = soup.find('div', id='product_description').next_element.next_element.next_element.next_element.next_element.next_element.string
     category = soup.find('li', class_='active').previous_element.previous_element.previous_element
-    review_rating = 0
+
+    div = soup.find('p', class_='star-rating')
+    review_rating = div['class'][1]
     img_tag = soup.find('img')
     Iurl = img_tag['src']
     image_url = Iurl.replace('../..', 'http://books.toscrape.com/')
@@ -87,7 +99,7 @@ def FindBookData(page_url):
 
 
 FindBookUrl(Purl)
-# FindBookData(Burl)
-LinkCatToBook()
+FindBookData(Burl)
+# LinkCatToBook()
 
 # FindBookData('http://books.toscrape.com/catalogue/full-moon-over-noahs-ark-an-odyssey-to-mount-ararat-and-beyond_811/index.html')
