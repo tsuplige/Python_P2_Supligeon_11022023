@@ -3,7 +3,16 @@ from bs4 import BeautifulSoup
 import csv
 import requests
 
+en_tete_link_data = ['liens']
+with open('link_data.csv', 'a', encoding='utf-8') as csv_files:
+        writer = csv.writer(csv_files, delimiter=',')
+        writer.writerow(en_tete_link_data)
 
+en_tete_book_data = ['url', 'upc', 'title', 'price_including_tax', ' price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating', 'img_url']
+
+with open('Book_data.csv', 'a', encoding='utf-8') as csv_files:
+        writer = csv.writer(csv_files, delimiter=',')
+        writer.writerow(en_tete_book_data)
 
 Burl = "http://books.toscrape.com/catalogue/the-girl-in-the-ice-dci-erika-foster-1_65/index.html"
 Purl = 'http://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
@@ -21,10 +30,8 @@ def FindBookUrl(page_url):
             li = a.get('href')
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
             links.append(lin)
-    en_tete = ['liens']
     with open('link_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
-        writer.writerow(en_tete)
         for link in links:
             writer.writerow([link])
     url_parts = page_url.rsplit('/', 1)
@@ -39,29 +46,16 @@ def FindBookUrl(page_url):
         print("Tag li avec classe 'next' non trouvé.")
 
 
-
-
-
-
-
-
-
-
-
-def LinkCatToBook():
-    with open('link_data.csv') as fichier_csv:
-        reader = csv.reader(fichier_csv, delimiter=',')
-        # for ligne in reader:
-        #     print(ligne)
-
-
-
-
-
-
-
-
-
+def LinkCatToBook(page_url):
+    FindBookUrl(page_url)
+    with open('link_data.csv', newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            if row:
+                for link in row:
+                    if 'http' in link:
+                        print(link)
+                        FindBookData(link)
 
 
 
@@ -89,17 +83,14 @@ def FindBookData(page_url):
     Iurl = img_tag['src']
     image_url = Iurl.replace('../..', 'http://books.toscrape.com/')
 
-    en_tete = ['url', 'upc', 'title', 'price_including_tax', ' price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating', 'img_url']
-
-    with open('Book_data.csv', 'w', encoding='utf-8') as csv_files:
+    with open('Book_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
-        writer.writerow(en_tete)
         writer.writerow([page_url, upc, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url])
     
 
 
-FindBookUrl(Purl)
-FindBookData(Burl)
-# LinkCatToBook()
+# FindBookUrl(Purl)
+# FindBookData(Burl)
+LinkCatToBook('http://books.toscrape.com/catalogue/category/books/mystery_3/index.html')
 
 # FindBookData('http://books.toscrape.com/catalogue/full-moon-over-noahs-ark-an-odyssey-to-mount-ararat-and-beyond_811/index.html')
