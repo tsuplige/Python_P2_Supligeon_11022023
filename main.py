@@ -1,21 +1,24 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
-import requests
+import os
+
+os.makedirs('data')
+os.makedirs('data/img')
 
 en_tete_link_data = ['liens']
-with open('link_data.csv', 'a', encoding='utf-8') as csv_files:
+with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow(en_tete_link_data)
 
 en_tete_book_data = ['url', 'upc', 'title', 'price_including_tax', ' price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating', 'img_url']
 
-with open('Book_data.csv', 'a', encoding='utf-8') as csv_files:
+with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow(en_tete_book_data)
 
 Burl = "http://books.toscrape.com/catalogue/the-girl-in-the-ice-dci-erika-foster-1_65/index.html"
-Purl = 'http://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
+Purl = 'http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html'
 
 
 
@@ -30,7 +33,7 @@ def FindBookUrl(page_url):
             li = a.get('href')
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
             links.append(lin)
-    with open('link_data.csv', 'a', encoding='utf-8') as csv_files:
+    with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         for link in links:
             writer.writerow([link])
@@ -48,7 +51,7 @@ def FindBookUrl(page_url):
 
 def LinkCatToBook(page_url):
     FindBookUrl(page_url)
-    with open('link_data.csv', newline='') as csvfile:
+    with open('data/link_data.csv', newline='') as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
             if row:
@@ -83,7 +86,7 @@ def FindBookData(page_url):
     Iurl = img_tag['src']
     image_url = Iurl.replace('../..', 'http://books.toscrape.com/')
 
-    with open('Book_data.csv', 'a', encoding='utf-8') as csv_files:
+    with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow([page_url, upc, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url])
     
@@ -91,6 +94,6 @@ def FindBookData(page_url):
 
 # FindBookUrl(Purl)
 # FindBookData(Burl)
-LinkCatToBook('http://books.toscrape.com/catalogue/category/books/mystery_3/index.html')
+LinkCatToBook(Purl)
 
 # FindBookData('http://books.toscrape.com/catalogue/full-moon-over-noahs-ark-an-odyssey-to-mount-ararat-and-beyond_811/index.html')
