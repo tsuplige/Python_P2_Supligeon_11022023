@@ -3,9 +3,22 @@ from bs4 import BeautifulSoup
 import csv
 import os
 
-os.makedirs('data')
-os.makedirs('data/img')
 
+
+# Verifie si les repertoires data et data/img exist et si non les cree
+if os.path.exists("data") and os.path.isdir("data"):
+    print("Le dossier 'data' existe.")
+    if os.path.exists("data/img") and os.path.isdir("data"):
+        print("Le dossier 'data/img' existe deja.")
+    else:
+        os.makedirs('data/img')
+else:
+    print("Le dossier 'data' n'existe pas.")
+    os.makedirs('data')
+    os.makedirs('data/img')
+
+
+# cree le fichier CSV Book_data
 en_tete_link_data = ['liens']
 with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
@@ -21,9 +34,9 @@ Burl = "http://books.toscrape.com/catalogue/the-girl-in-the-ice-dci-erika-foster
 Purl = 'http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html'
 
 
+links = []
 
 def FindBookUrl(page_url):
-    links = []
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
     artc = soup.find_all('h3')
@@ -33,32 +46,41 @@ def FindBookUrl(page_url):
             li = a.get('href')
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
             links.append(lin)
-    with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
-        writer = csv.writer(csv_files, delimiter=',')
-        for link in links:
-            writer.writerow([link])
+    # with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
+    #     writer = csv.writer(csv_files, delimiter=',')
+    #     for link in links:
+    #         writer.writerow([link])
     url_parts = page_url.rsplit('/', 1)
     next = soup.find('li', class_='next')
+    print(next)
+    print(links, "\n\n_____________________________\n\n")
     if next:
         a_tag = next.find('a')
         href = a_tag['href']
         new_link = url_parts[0] + '/' + href
-        # FindBookData()
         FindBookUrl(new_link)
     else:
         print("Tag li avec classe 'next' non trouvé.")
+    return links
 
 
 def LinkCatToBook(page_url):
     FindBookUrl(page_url)
-    with open('data/link_data.csv', newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            if row:
-                for link in row:
-                    if 'http' in link:
-                        print(link)
-                        FindBookData(link)
+
+    # print(links)
+
+    for link in links:
+         if 'http' in link:
+            FindBookData(link)
+         
+    # with open('data/link_data.csv', newline='') as csvfile:
+    #     reader = csv.reader(csvfile)
+    #     for row in reader:
+    #         if row:
+    #             for link in row:
+    #                 if 'http' in link:
+    #                     print(link)
+    #                     FindBookData(link)
 
 
 
