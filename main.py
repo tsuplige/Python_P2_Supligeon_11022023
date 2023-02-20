@@ -17,24 +17,35 @@ else:
     os.makedirs('data')
     os.makedirs('data/img')
 
+if os.path.exists('data/Book_data.csv'):
+    os.remove('data/Book_data.csv')
+    print(f"Le fichier {'data/Book_data.csv'} a été supprimé.")
 
-# cree le fichier CSV Book_data
-en_tete_link_data = ['liens']
-with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
-        writer = csv.writer(csv_files, delimiter=',')
-        writer.writerow(en_tete_link_data)
 
+# cree le fichier CSV Book_data avec sont en tete
 en_tete_book_data = ['url', 'upc', 'title', 'price_including_tax', ' price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating', 'img_url']
 
 with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow(en_tete_book_data)
 
-Burl = "http://books.toscrape.com/catalogue/the-girl-in-the-ice-dci-erika-foster-1_65/index.html"
-Purl = 'http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html'
+Burl = "http://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"
+# Purl = 'http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html'
 
+# liste qui contiemdra les liens des fiche livre
+Book_links = []
+cat_link = []
 
-links = []
+def FindCategoryUrl(site_url):
+    page = requests.get(site_url)
+    soup = BeautifulSoup(page.content, 'html.parser')
+
+    list = soup.find('ul', class_='nav nav-list')
+    a = list.find_all('a')
+    for link in a:
+        cat_link.append(site_url + link.get('href'))
+    
+    # print(cat_link)
 
 def FindBookUrl(page_url):
     page = requests.get(page_url)
@@ -45,15 +56,11 @@ def FindBookUrl(page_url):
             a = h3.find('a')
             li = a.get('href')
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
-            links.append(lin)
-    # with open('data/link_data.csv', 'a', encoding='utf-8') as csv_files:
-    #     writer = csv.writer(csv_files, delimiter=',')
-    #     for link in links:
-    #         writer.writerow([link])
+            Book_links.append(lin)
     url_parts = page_url.rsplit('/', 1)
     next = soup.find('li', class_='next')
-    print(next)
-    print(links, "\n\n_____________________________\n\n")
+    # print(next)
+    # print(Book_links, "\n\n_____________________________\n\n")
     if next:
         a_tag = next.find('a')
         href = a_tag['href']
@@ -61,28 +68,7 @@ def FindBookUrl(page_url):
         FindBookUrl(new_link)
     else:
         print("Tag li avec classe 'next' non trouvé.")
-    return links
-
-
-def LinkCatToBook(page_url):
-    FindBookUrl(page_url)
-
-    # print(links)
-
-    for link in links:
-         if 'http' in link:
-            FindBookData(link)
-         
-    # with open('data/link_data.csv', newline='') as csvfile:
-    #     reader = csv.reader(csvfile)
-    #     for row in reader:
-    #         if row:
-    #             for link in row:
-    #                 if 'http' in link:
-    #                     print(link)
-    #                     FindBookData(link)
-
-
+    return Book_links
 
 def FindBookData(page_url):
     page = requests.get(page_url)
@@ -99,7 +85,9 @@ def FindBookData(page_url):
     price_including_tax = info[2]
     price_excluding_tax = info[3]
     number_available = info[5]
-    product_description = soup.find('div', id='product_description').next_element.next_element.next_element.next_element.next_element.next_element.string
+    
+    p = soup.find_all('p')
+    product_description = p[3].string
     category = soup.find('li', class_='active').previous_element.previous_element.previous_element
 
     div = soup.find('p', class_='star-rating')
@@ -112,10 +100,32 @@ def FindBookData(page_url):
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow([page_url, upc, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url])
     
+def LinkCatToBook():
+    FindCategoryUrl('http://books.toscrape.com/')
+    for link in cat_link:
+        FindBookUrl(link)
+        print(link, '  ____________  ')
+
+    # print(Book_links)
+
+    for link in Book_links:
+         if 'http' in link:
+            FindBookData(link)
+         
+    # with open('data/link_data.csv', newline='') as csvfile:
+    #     reader = csv.reader(csvfile)
+    #     for row in reader:
+    #         if row:
+    #             for link in row:
+    #                 if 'http' in link:
+    #                     print(link)
+    #                     FindBookData(link)
 
 
 # FindBookUrl(Purl)
 # FindBookData(Burl)
-LinkCatToBook(Purl)
+# LinkCatToBook(Purl)
+
+LinkCatToBook()
 
 # FindBookData('http://books.toscrape.com/catalogue/full-moon-over-noahs-ark-an-odyssey-to-mount-ararat-and-beyond_811/index.html')
