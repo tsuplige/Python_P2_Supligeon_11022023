@@ -35,7 +35,6 @@ Burl = "http://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html
 # liste qui contiemdra les liens des fiche livre
 Book_links = []
 cat_link = []
-
 def FindCategoryUrl(site_url):
     page = requests.get(site_url)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -66,9 +65,6 @@ def FindBookUrl(page_url):
         href = a_tag['href']
         new_link = url_parts[0] + '/' + href
         FindBookUrl(new_link)
-    else:
-        print("Tag li avec classe 'next' non trouvé.")
-    return Book_links
 
 def FindBookData(page_url):
     page = requests.get(page_url)
@@ -96,21 +92,29 @@ def FindBookData(page_url):
     Iurl = img_tag['src']
     image_url = Iurl.replace('../..', 'http://books.toscrape.com/')
 
+    DowmloadImg(image_url,upc)
+
     with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow([page_url, upc, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url])
     
 def LinkCatToBook():
+    NumOfBookDll = 0
     FindCategoryUrl('http://books.toscrape.com/')
     for link in cat_link:
         FindBookUrl(link)
-        print(link, '  ____________  ')
+    #     NumOfBook += 1
 
     # print(Book_links)
 
     for link in Book_links:
          if 'http' in link:
             FindBookData(link)
+            NumOfBookDll += 1
+            os.system('cls')
+            print('________________', NumOfBookDll, ' livres telecharge. ',2000 - NumOfBookDll,'restant a Dll','_________________')
+            
+
          
     # with open('data/link_data.csv', newline='') as csvfile:
     #     reader = csv.reader(csvfile)
@@ -121,6 +125,10 @@ def LinkCatToBook():
     #                     print(link)
     #                     FindBookData(link)
 
+def DowmloadImg(url,upc) :
+    reponse = requests.get(url)
+    with open('data/img/'+ upc+'.jpg', 'wb') as img:
+        img.write(reponse.content)
 
 # FindBookUrl(Purl)
 # FindBookData(Burl)
