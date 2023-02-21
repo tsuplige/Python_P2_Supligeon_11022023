@@ -2,14 +2,17 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 import os
+import shutil
 
 
 
-# Verifie si les repertoires data et data/img exist et si non les cree
+
+# Verifie si les repertoires data,data/img et le fichier Book_data.csv existes,les supprimmes pour en cree des vide afin d'eviter les doublons et si non les cree
 if os.path.exists("data") and os.path.isdir("data"):
     print("Le dossier 'data' existe.")
     if os.path.exists("data/img") and os.path.isdir("data"):
-        print("Le dossier 'data/img' existe deja.")
+        shutil.rmtree('data/img')
+        os.makedirs('data/img')
     else:
         os.makedirs('data/img')
 else:
@@ -24,17 +27,15 @@ if os.path.exists('data/Book_data.csv'):
 
 # cree le fichier CSV Book_data avec sont en tete
 en_tete_book_data = ['url', 'upc', 'title', 'price_including_tax', ' price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating', 'img_url']
-
 with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow(en_tete_book_data)
 
-Burl = "http://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"
-# Purl = 'http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html'
-
 # liste qui contiemdra les liens des fiche livre
 Book_links = []
 cat_link = []
+
+# Fonction Prenant en parametre le Lien[STRING] du site et qui cherche toute les category et leurs liens
 def FindCategoryUrl(site_url):
     page = requests.get(site_url)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -46,6 +47,7 @@ def FindCategoryUrl(site_url):
     
     # print(cat_link)
 
+# Fonction Recursive Prenant en parametre le Lien[STRING] d'une categorie et qui cherche toute les livre de la page et si il trouve un bouton next 
 def FindBookUrl(page_url):
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -58,14 +60,13 @@ def FindBookUrl(page_url):
             Book_links.append(lin)
     url_parts = page_url.rsplit('/', 1)
     next = soup.find('li', class_='next')
-    # print(next)
-    # print(Book_links, "\n\n_____________________________\n\n")
     if next:
         a_tag = next.find('a')
         href = a_tag['href']
         new_link = url_parts[0] + '/' + href
         FindBookUrl(new_link)
 
+# Fonction Prenant en parametre Un Lien[STRING] d'une page Produit et qui cherche les donnee pour les ecrire dans un fichier .csv
 def FindBookData(page_url):
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -98,6 +99,7 @@ def FindBookData(page_url):
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow([page_url, upc, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url])
     
+# Fonction appellant FindCategoryUrl() puis utilise les lien des categorie pour appeller FindBookUrl() Pour finalement collecter les donnee des livre trouver avec FindBookData()
 def LinkCatToBook():
     NumOfBookDll = 0
     FindCategoryUrl('http://books.toscrape.com/')
@@ -112,7 +114,7 @@ def LinkCatToBook():
             FindBookData(link)
             NumOfBookDll += 1
             os.system('cls')
-            print('________________', NumOfBookDll, ' livres telecharge. ',2000 - NumOfBookDll,'restant a Dll','_________________')
+            print('________________', NumOfBookDll, ' livres telecharge. ',1000 - NumOfBookDll,'restant a Dll','_________________')
             
 
          
@@ -125,15 +127,10 @@ def LinkCatToBook():
     #                     print(link)
     #                     FindBookData(link)
 
+# Fonction permettant de Telecharger les Images des livre en prenant en parametre le liens de l'image[STRING] et son code upc[STRING] pour le nommee
 def DowmloadImg(url,upc) :
     reponse = requests.get(url)
     with open('data/img/'+ upc+'.jpg', 'wb') as img:
         img.write(reponse.content)
 
-# FindBookUrl(Purl)
-# FindBookData(Burl)
-# LinkCatToBook(Purl)
-
 LinkCatToBook()
-
-# FindBookData('http://books.toscrape.com/catalogue/full-moon-over-noahs-ark-an-odyssey-to-mount-ararat-and-beyond_811/index.html')
