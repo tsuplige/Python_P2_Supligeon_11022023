@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import csv
 import os
 import shutil
+from tqdm import tqdm
 
 
 
@@ -42,7 +43,8 @@ def FindCategoryUrl(site_url):
 
     list = soup.find('ul', class_='nav nav-list')
     a = list.find_all('a')
-    for link in a:
+    print("recuperation des liens des categories")
+    for link in tqdm(a):
         cat_link.append(site_url + link.get('href'))
     
     # print(cat_link)
@@ -52,8 +54,8 @@ def FindBookUrl(page_url):
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
     artc = soup.find_all('h3')
-
-    for h3 in artc:
+    print("recuperation des urls des livres")
+    for h3 in tqdm(artc):
             a = h3.find('a')
             li = a.get('href')
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
@@ -109,12 +111,12 @@ def LinkCatToBook():
 
     # print(Book_links)
 
-    for link in Book_links:
+    for link in tqdm(Book_links):
          if 'http' in link:
             FindBookData(link)
             NumOfBookDll += 1
-            os.system('cls')
-            print('________________', NumOfBookDll, ' livres telecharge. ',1000 - NumOfBookDll,'restant a Dll','_________________')
+            # os.system('cls')
+            # print('________________', NumOfBookDll, ' livres telecharge. ',1000 - NumOfBookDll,'restant a Dll','_________________')
             
 
          
