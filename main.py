@@ -16,10 +16,16 @@ if os.path.exists("data") and os.path.isdir("data"):
         os.makedirs('data/img')
     else:
         os.makedirs('data/img')
+    if os.path.exists("data/csv_files") and os.path.isdir("data"):
+        shutil.rmtree('data/csv_files')
+        os.makedirs('data/csv_files')
+    else:
+        os.makedirs('data/csv_files')
 else:
     print("Le dossier 'data' n'existe pas.")
     os.makedirs('data')
     os.makedirs('data/img')
+    os.makedirs('data/csv_files')
 
 if os.path.exists('data/Book_data.csv'):
     os.remove('data/Book_data.csv')
@@ -28,48 +34,56 @@ if os.path.exists('data/Book_data.csv'):
 
 # cree le fichier CSV Book_data avec sont en tete
 en_tete_book_data = ['url', 'upc', 'title', 'price_including_tax', ' price_excluding_tax', 'number_available', 'product_description', 'category', 'review_rating', 'img_url']
-with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
-        writer = csv.writer(csv_files, delimiter=',')
-        writer.writerow(en_tete_book_data)
 
-# liste qui contiemdra les liens des fiche livre
-Book_links = []
-cat_link = []
-
-# Fonction Prenant en parametre le Lien[STRING] du site et qui cherche toute les category et leurs liens
+# Fonction Prenant en parametre le Lien[STRING] du site et qui cherche toute les category et leurs liens et lance la fontcion LinkCatToBook()
 def FindCategoryUrl(site_url):
     page = requests.get(site_url)
     soup = BeautifulSoup(page.content, 'html.parser')
 
     list = soup.find('ul', class_='nav nav-list')
     a = list.find_all('a')
-    print("recuperation des liens des categories")
-    for link in tqdm(a):
-        cat_link.append(site_url + link.get('href'))
-    
-    # print(cat_link)
+    a.pop(0)
+    print('\n________________________________________________ '+"recuperation des liens des categories"+' ________________________________________________\n')
+    for link in a:
+        lien = site_url + link.get('href')
+        Cat_name = link.string.replace("    ","").replace(" ","").replace("\n","")
+        print(Cat_name)
+        LinkCatToBook(lien, Cat_name)
+    print('\n\n________________________________________________ '+"telchargement termine"+' ________________________________________________\n')
 
 # Fonction Recursive Prenant en parametre le Lien[STRING] d'une categorie et qui cherche toute les livre de la page et si il trouve un bouton next 
-def FindBookUrl(page_url):
-    page = requests.get(page_url)
+def FindBookUrl(Cat_url):
+    page = requests.get(Cat_url)
     soup = BeautifulSoup(page.content, 'html.parser')
     artc = soup.find_all('h3')
-    print("recuperation des urls des livres")
+    print("recuperation des urls des livres : " )
+    # Cat_Title = soup.find('h1').string
+    Book_links = []
+
+
+    # with open('data/csv_files/'+Cat_Title+'.csv', 'a', encoding='utf-8') as csv_files:
+    #     writer = csv.writer(csv_files, delimiter=',')
+    #     writer.writerow(en_tete_book_data)
+    
     for h3 in tqdm(artc):
             a = h3.find('a')
             li = a.get('href')
             lin = li.replace('../../..', 'http://books.toscrape.com/catalogue')
             Book_links.append(lin)
-    url_parts = page_url.rsplit('/', 1)
+    url_parts = Cat_url.rsplit('/', 1)
     next = soup.find('li', class_='next')
     if next:
         a_tag = next.find('a')
         href = a_tag['href']
         new_link = url_parts[0] + '/' + href
-        FindBookUrl(new_link)
+        New_Book_links = FindBookUrl(new_link)
+        for link in New_Book_links:
+            Book_links.append(link)
+        # Book_links.append(FindBookUrl(new_link))
+    return Book_links
 
 # Fonction Prenant en parametre Un Lien[STRING] d'une page Produit et qui cherche les donnee pour les ecrire dans un fichier .csv
-def FindBookData(page_url):
+def FindBookData(page_url, Cfiles):
     page = requests.get(page_url)
     soup = BeautifulSoup(page.content, 'html.parser')
     infotb = soup.find_all('td')
@@ -97,37 +111,23 @@ def FindBookData(page_url):
 
     DowmloadImg(image_url,upc)
 
-    with open('data/Book_data.csv', 'a', encoding='utf-8') as csv_files:
+    with open(Cfiles, 'a', encoding='utf-8') as csv_files:
         writer = csv.writer(csv_files, delimiter=',')
         writer.writerow([page_url, upc, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url])
     
-# Fonction appellant FindCategoryUrl() puis utilise les lien des categorie pour appeller FindBookUrl() Pour finalement collecter les donnee des livre trouver avec FindBookData()
-def LinkCatToBook():
-    NumOfBookDll = 0
-    FindCategoryUrl('http://books.toscrape.com/')
-    for link in cat_link:
-        FindBookUrl(link)
-    #     NumOfBook += 1
-
-    # print(Book_links)
-
+# Fonction appellant FindBookUrl() Pour collecter les donnee des livre trouver avec FindBookData()
+def LinkCatToBook(Clink, CName):
+    files_name = 'data/csv_files/'+CName+'_data.csv'
+    with open(files_name, 'a', encoding='utf-8') as csv_files:
+        writer = csv.writer(csv_files, delimiter=',')
+        writer.writerow(en_tete_book_data)
+    Book_links = FindBookUrl(Clink)
+    print('\n\n________________________________________________ '+"telechargement des donnee de la category :" + CName + '  ________________________________________________\n')
+    
     for link in tqdm(Book_links):
          if 'http' in link:
-            FindBookData(link)
-            NumOfBookDll += 1
-            # os.system('cls')
-            # print('________________', NumOfBookDll, ' livres telecharge. ',1000 - NumOfBookDll,'restant a Dll','_________________')
-            
-
-         
-    # with open('data/link_data.csv', newline='') as csvfile:
-    #     reader = csv.reader(csvfile)
-    #     for row in reader:
-    #         if row:
-    #             for link in row:
-    #                 if 'http' in link:
-    #                     print(link)
-    #                     FindBookData(link)
+            FindBookData(link, files_name)
+    
 
 # Fonction permettant de Telecharger les Images des livre en prenant en parametre le liens de l'image[STRING] et son code upc[STRING] pour le nommee
 def DowmloadImg(url,upc) :
@@ -135,4 +135,4 @@ def DowmloadImg(url,upc) :
     with open('data/img/'+ upc+'.jpg', 'wb') as img:
         img.write(reponse.content)
 
-LinkCatToBook()
+FindCategoryUrl('http://books.toscrape.com/')

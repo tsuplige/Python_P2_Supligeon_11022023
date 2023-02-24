@@ -130,3 +130,5 @@ dmypy.json
 help.txt
 data/
 .vscode/
+vscode/
+mainv1.py
